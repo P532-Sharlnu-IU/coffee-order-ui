@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coffee Order System</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f5e8cc; text-align: center; }
+        .page-title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-weight: bold;
+        }
+        .container {
+            width: 80%;
+            max-width: 800px;
+            margin: 80px auto 0;
+            padding: 20px;
+        }
+        .button {
+            background-color: #c4ab80;
+            padding: 15px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            width: 150px auto;
+        }
+        .order-status { position: absolute; top: 20px; right: 20px; font-weight: bold; }
+        .order-frame { border: 2px solid black; padding: 10px; margin: 10px; display: inline-block; }
+        .hidden { display: none; }
+        .order-placed { font-size: 18px; margin-bottom: 20px; font-weight: bold;}
+        .order-id { font-weight: bold; }
+        .order-description { margin: 15px 0; font-style: italic; }
+        .order-total { font-weight: bold; margin-top: 15px; }
+        #selected-beverage { cursor: pointer; padding: 5px; font-weight: bold;}
+        #selected-beverage:hover { background-color: #e0d0b0; }
+        #condiment-list { display: flex; flex-direction: column; }
+        #condiment-list button { margin: 5px 0; }
+        .beverage-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .condiment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+<div class="page-title">Coffee Order System</div>
+<div class="order-status">Order Status</div>
+<div id="start-page" class="container">
+    <button class="button" onclick="showPage('beverage-page')">Start your order here</button>
+</div>
+
+<div id="beverage-page" class="container hidden">
+    <h2>Select the beverage</h2>
+    <div class="beverage-grid">
+        <button class="button" onclick="selectBeverage('Dark Roast')">Dark Roast</button>
+        <button class="button" onclick="selectBeverage('Espresso')">Espresso</button>
+        <button class="button" onclick="selectBeverage('House Blend')">House Blend</button>
+        <button class="button" onclick="selectBeverage('Decaf')">Decaf</button>
+    </div>
+</div>
+
+<div id="condiment-page" class="container hidden">
+    <h2>Add the condiments</h2>
+    <div class="condiment-grid">
+        <button class="button" onclick="addCondiment('Milk')">Milk</button>
+        <button class="button" onclick="addCondiment('Mocha')">Mocha</button>
+        <button class="button" onclick="addCondiment('Soy')">Soy</button>
+        <button class="button" onclick="addCondiment('Whip')">Whip</button>
+    </div>
+    <div class="order-frame">
+        <h3>My Order</h3>
+        <p id="selected-beverage" onclick="removeBeverage()"></p>
+        <div id="condiment-list"></div>
+        <button class="button" onclick="confirmOrder()">Confirm Order</button>
+    </div>
+</div>
+
+<div id="confirmation-page" class="container hidden">
+    <div class="order-placed">Order Placed:</div>
+    <div class="order-id">Order id: <span id="order-id">24</span></div>
+    <div class="order-description" id="order-description"></div>
+    <div class="order-total">Total: $<span id="order-total">4.5</span></div>
+    <button class="button" onclick="restartOrder()">Start New Order</button>
+</div>
+
+<script>
+    let order = { beverage: '', condiments: [] };
+    let orderId = 24; // Starting dummy order ID
+
+    function showPage(pageId) {
+        document.querySelectorAll('.container').forEach(page => page.classList.add('hidden'));
+        document.getElementById(pageId).classList.remove('hidden');
+    }
+
+    function selectBeverage(beverage) {
+        order.beverage = beverage;
+        document.getElementById('selected-beverage').innerText = beverage;
+        // Clear the condiment list display when selecting a new beverage
+        document.getElementById('condiment-list').innerHTML = '';
+        showPage('condiment-page');
+    }
+
+    function addCondiment(condiment) {
+        if (!order.condiments.includes(condiment)) {
+            order.condiments.push(condiment);
+            updateCondimentList();
+        }
+    }
+
+    function updateCondimentList() {
+        const list = document.getElementById('condiment-list');
+        list.innerHTML = '';
+        order.condiments.forEach(condiment => {
+            let btn = document.createElement('button');
+            btn.classList.add('button');
+            btn.innerText = condiment;
+            btn.onclick = () => removeCondiment(condiment);
+            list.appendChild(btn);
+        });
+    }
+
+    function removeCondiment(condiment) {
+        order.condiments = order.condiments.filter(c => c !== condiment);
+        updateCondimentList();
+    }
+
+    function removeBeverage() {
+        order.beverage = '';
+        order.condiments = [];
+        // Clear the condiment list display immediately
+        document.getElementById('condiment-list').innerHTML = '';
+        showPage('beverage-page');
+    }
+
+    function confirmOrder() {
+        // Generate order description
+        let description = order.beverage;
+
+        // Process condiments
+        const condimentCounts = {};
+        order.condiments.forEach(condiment => {
+            condimentCounts[condiment] = (condimentCounts[condiment] || 0) + 1;
+        });
+
+        const condimentDescriptions = [];
+        for (const [condiment, count] of Object.entries(condimentCounts)) {
+            if (count > 1) {
+                condimentDescriptions.push(`${count} ${condiment.toLowerCase()}`);
+            } else {
+                condimentDescriptions.push(condiment.toLowerCase());
+            }
+        }
+
+        if (condimentDescriptions.length > 0) {
+            description += " with " + condimentDescriptions.join(' and ');
+        }
+
+        // Update confirmation page
+        document.getElementById('order-description').textContent = description + "!";
+        document.getElementById('order-id').textContent = orderId++;
+        document.getElementById('order-total').textContent = "4.5"; // Fixed dummy value
+
+        // Show confirmation page
+        showPage('confirmation-page');
+    }
+
+    function restartOrder() {
+        order = { beverage: '', condiments: [] };
+        showPage('start-page');
+    }
+</script>
+</body>
+</html>
